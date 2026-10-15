@@ -15,24 +15,24 @@ Proyek ini dikerjakan sebagai tugas besar (TUBES) Program Studi Teknik Informati
 
 ## Teknologi
 
-| Lapisan | Tool |
-| --- | --- |
-| Database | PostgreSQL + ekstensi pgvector |
-| Backend | Python, FastAPI, LlamaIndex |
-| LLM | Llama 3 melalui Ollama (self-hosted) |
-| Autentikasi | Keycloak (JWT) |
-| Frontend | React.js + TypeScript |
-| Desain UI | Figma |
-| Lingkungan dev | Docker Compose, VS Code |
+| Lapisan        | Tool                                 |
+| -------------- | ------------------------------------ |
+| Database       | PostgreSQL + ekstensi pgvector       |
+| Backend        | Python, FastAPI, LlamaIndex          |
+| LLM            | Llama 3 melalui Ollama (self-hosted) |
+| Autentikasi    | Keycloak (JWT)                       |
+| Frontend       | React.js + TypeScript                |
+| Desain UI      | Figma                                |
+| Lingkungan dev | Docker Compose, VS Code              |
 
 ## Tim
 
-| Nama |
-| --- |
+| Nama                    |
+| ----------------------- |
 | Yoel Gabriel Nainggolan |
-| Aqsyal Raihan Jamil |
-| Ilham Rizal Diantama |
-| Dwiyana Tri Pandaya |
+| Aqsyal Raihan Jamil     |
+| Ilham Rizal Diantama    |
+| Dwiyana Tri Pandaya     |
 
 ## Rencana Konstruksi
 
