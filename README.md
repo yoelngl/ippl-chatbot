@@ -38,6 +38,12 @@ Proyek ini dikerjakan sebagai tugas besar (TUBES) Program Studi Teknik Informati
 
 Pengerjaan dijadwalkan 6 minggu dalam empat kelompok aktivitas: pembuatan database, antarmuka pengguna, kode program, dan pengujian.
 
+## Struktur Repo
+
+| Folder | Isi |
+| --- | --- |
+| [`frontend/`](frontend/) | SPA React + TypeScript (Vite) sesuai prototipe Figma, dengan backend tiruan dan akun uji per peran. Lihat [frontend/README.md](frontend/README.md). |
+
 ## Status
 
-Dalam tahap perencanaan dan pengembangan awal.
+Frontend (halaman Login, Chat, Admin, dan Auditor) sudah dibuat dan berjalan dengan backend tiruan. Backend FastAPI, database, dan integrasi Keycloak/Ollama masih dalam pengembangan.

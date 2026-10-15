@@ -1,0 +1,59 @@
+/* Design tokens, mirrored from the "Tokens" collection in the Figma file
+   "IMK – Chatbot Cerdas & Aman (TUBES IPPL)". Keep names in sync with Figma. */
+:root {
+  --color-primary: #d7262d;
+  --color-primary-hover: #b31b21;
+  --color-primary-subtle: #fdecec;
+
+  --color-bg: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f4f6;
+  --color-border: #e5e7eb;
+
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-text-subtle: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  --color-sidebar: #16161a;
+  --color-sidebar-hover: #26262c;
+  --color-sidebar-text: #a1a1aa;
+
+  --color-success: #15803d;
+  --color-success-subtle: #dcfce7;
+  --color-info: #1d4ed8;
+  --color-info-subtle: #dbeafe;
+  --color-warning: #b45309;
+  --color-warning-subtle: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-subtle: #fee2e2;
+  --color-purple: #6d28d9;
+  --color-purple-subtle: #ede9fe;
+
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Text styles (Figma: Display/XL … Small/Medium) */
+  --text-display: 700 32px/40px var(--font-sans);
+  --text-heading-l: 600 22px/30px var(--font-sans);
+  --text-heading-m: 600 17px/24px var(--font-sans);
+  --text-body: 400 14px/22px var(--font-sans);
+  --text-body-medium: 500 14px/22px var(--font-sans);
+  --text-body-semibold: 600 14px/22px var(--font-sans);
+  --text-small: 400 12px/18px var(--font-sans);
+  --text-small-medium: 500 12px/18px var(--font-sans);
+
+  --shadow-card: 0 8px 24px rgba(18, 23, 38, 0.06);
+  --shadow-dialog: 0 20px 48px rgba(0, 0, 0, 0.2);
+}
