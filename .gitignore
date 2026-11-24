@@ -32,8 +32,13 @@ htmlcov/
 
 # Node.js (if adding frontend)
 node_modules/
+frontend/dist/
+dist/
 npm-debug.log
 yarn-error.log
 
 # Docker
 *.log
+
+# File dokumen yang diunggah (bisa berklasifikasi rahasia)
+data/documents/
