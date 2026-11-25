@@ -446,6 +446,7 @@ class TestAnswerQuality:
         rows = [_row(0.30, "Panduan Portal HR.pdf"), _row(0.29, "Jadwal Libur Nasional 2026.pdf")]
         llm = AsyncMock(return_value="tidak boleh dipanggil")
         with patch.object(settings, "allow_mock_embedding", True), \
+             patch.object(settings, "rag_query_rewrite", False), \
              patch("backend.app.services.rag_service.record_audit_log", new_callable=AsyncMock), \
              patch("backend.app.services.rag_service._ollama_chat", new=llm):
             res = await execute_rag_query(

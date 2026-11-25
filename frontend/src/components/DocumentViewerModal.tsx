@@ -130,8 +130,8 @@ export const DocumentViewerModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Tabs (hanya bila PDF asli tersedia) */}
-        {pdfUrl && (
+        {/* Tab "Teks terindeks" hanya di konsol Admin; di chat hanya dokumen asli */}
+        {pdfUrl && basePath === "/admin/documents" && (
           <div className="flex gap-1 px-5 pt-2 border-b border-gray-100 text-xs">
             {(["file", "text"] as const).map((t) => (
               <button

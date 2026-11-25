@@ -203,10 +203,14 @@ async def sync_user_to_db(session: AsyncSession, user_info: UserInfo) -> User:
     Sinkronisasi pengguna dari klaim JWT ke tabel users dan mapping peran ke tabel roles.
     """
     # 1. Tentukan peran yang cocok
-    matched_role_name = next(
-        (r for r in KNOWN_ROLES if r in user_info.roles),
-        "Karyawan",
-    )
+    # Peran bawaan punya prioritas; peran kustom (dibuat di UI) cocok bila ada realm role Keycloak bernama sama
+    matched_role_name = next((r for r in KNOWN_ROLES if r in user_info.roles), None)
+    if matched_role_name is None and user_info.roles:
+        custom = await session.execute(
+            select(Role.name).where(Role.name.in_(user_info.roles)).order_by(Role.id).limit(1)
+        )
+        matched_role_name = custom.scalar_one_or_none()
+    matched_role_name = matched_role_name or "Karyawan"
 
     role_stmt = select(Role).where(Role.name == matched_role_name)
     res_role = await session.execute(role_stmt)

@@ -58,6 +58,8 @@ export const AdminRolesPage: React.FC = () => {
     can_view_audit: false,
   });
   const [isSavingRole, setIsSavingRole] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newRole, setNewRole] = useState({ name: "", description: "" });
 
   // User role change state
   const [changingUserRole, setChangingUserRole] = useState<{
@@ -123,15 +125,30 @@ export const AdminRolesPage: React.FC = () => {
     });
   };
 
+  const closeRoleModal = () => {
+    setEditingRole(null);
+    setIsCreating(false);
+  };
+
+  const handleOpenCreateRole = () => {
+    setNewRole({ name: "", description: "" });
+    setRoleForm({ allowed_classifications: ["Public"], can_manage_docs: false, can_view_audit: false });
+    setIsCreating(true);
+  };
+
   const handleSaveRole = async () => {
-    if (!editingRole) return;
+    if (!editingRole && !isCreating) return;
     setIsSavingRole(true);
     try {
-      await api.put(`/admin/roles/${editingRole.id}`, roleForm);
-      setEditingRole(null);
+      if (isCreating) {
+        await api.post("/admin/roles", { ...newRole, ...roleForm });
+      } else {
+        await api.put(`/admin/roles/${editingRole!.id}`, roleForm);
+      }
+      closeRoleModal();
       await loadRoles();
     } catch (err: any) {
-      alert("Gagal memperbarui izin peran: " + err.message);
+      alert("Gagal menyimpan peran: " + err.message);
     } finally {
       setIsSavingRole(false);
     }
@@ -211,7 +228,7 @@ export const AdminRolesPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => alert("Peran sistem terintegrasi dengan Keycloak dev-realm.json.")}
+            onClick={handleOpenCreateRole}
             className="flex items-center gap-1.5 px-4 py-2 bg-[#C92A2A] hover:bg-[#A61E1E] text-white text-xs font-semibold rounded-xl shadow-sm transition"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -489,15 +506,15 @@ export const AdminRolesPage: React.FC = () => {
       </div>
 
       {/* Modal Edit Izin Peran */}
-      {editingRole && (
+      {(editingRole || isCreating) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border border-gray-200 text-gray-900">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-base">
-                Konfigurasi Izin Peran: {editingRole.name}
+                {isCreating ? "Tambah Peran Baru" : `Konfigurasi Izin Peran: ${editingRole!.name}`}
               </h3>
               <button
-                onClick={() => setEditingRole(null)}
+                onClick={closeRoleModal}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-5 h-5" />
@@ -507,6 +524,24 @@ export const AdminRolesPage: React.FC = () => {
             <p className="text-xs text-gray-500 mb-5">
               Pilih klasifikasi dokumen yang diizinkan untuk peran ini dan hak akses sistem.
             </p>
+
+            {isCreating && (
+              <div className="space-y-2 mb-5">
+                <input
+                  value={newRole.name}
+                  onChange={(e) => setNewRole((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Nama peran (harus sama dengan nama realm role di Keycloak)"
+                  maxLength={50}
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl"
+                />
+                <input
+                  value={newRole.description}
+                  onChange={(e) => setNewRole((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Deskripsi (opsional)"
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl"
+                />
+              </div>
+            )}
 
             <div className="space-y-4 mb-6">
               <div>
@@ -579,7 +614,7 @@ export const AdminRolesPage: React.FC = () => {
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setEditingRole(null)}
+                onClick={closeRoleModal}
                 className="px-4 py-2 text-xs text-gray-600 hover:bg-gray-100 rounded-xl transition"
               >
                 Batal
@@ -587,10 +622,10 @@ export const AdminRolesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSaveRole}
-                disabled={isSavingRole}
+                disabled={isSavingRole || (isCreating && !newRole.name.trim())}
                 className="px-5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition disabled:opacity-50"
               >
-                {isSavingRole ? "Menyimpan..." : "Simpan Perubahan"}
+                {isSavingRole ? "Menyimpan..." : isCreating ? "Buat Peran" : "Simpan Perubahan"}
               </button>
             </div>
           </div>

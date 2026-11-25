@@ -2,7 +2,7 @@
 Router untuk Chat RAG, Sesi Percakapan, Riwayat Pesan, dan Evaluasi Umpan Balik (Feedback).
 """
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
@@ -64,6 +64,26 @@ async def create_session(
     Membuat sesi chat percakapan baru.
     """
     user_id = uuid.UUID(user.db_id) if user.db_id else None
+
+    # Anti-spam: bila masih ada sesi kosong (belum ada pesan), pakai ulang sesi itu
+    empty = (
+        await session.execute(
+            select(ChatSession)
+            .where(
+                ChatSession.user_id == user_id,
+                ~select(ChatMessage.id).where(ChatMessage.session_id == ChatSession.id).exists(),
+            )
+            .order_by(ChatSession.updated_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if empty:
+        if body.title and body.title != empty.title:
+            empty.title = body.title
+            await session.commit()
+            await session.refresh(empty)
+        return empty
+
     new_session = ChatSession(
         id=uuid.uuid4(),
         user_id=user_id,
@@ -163,6 +183,9 @@ async def send_chat_query(
             detail="Sesi percakapan tidak ditemukan.",
         )
 
+    # Riwayat percakapan (sebelum pesan ini) untuk memahami pertanyaan lanjutan
+    history = await _load_history(session, session_id)
+
     # 2. Simpan pesan pengguna
     user_msg = ChatMessage(
         id=uuid.uuid4(),
@@ -183,6 +206,7 @@ async def send_chat_query(
     rag_result = await execute_rag_query(
         session=session,
         query=body.content,
+        history=history,
         user_name=user.full_name or user.username,
         user_role=role_name,
         allowed_classifications=allowed_classifications,
@@ -316,3 +340,24 @@ async def get_cited_document_file(
 ):
     doc = await get_viewable_document(doc_id, request, session, user)
     return document_file_response(doc, download)
+
+
+async def _load_history(session: AsyncSession, session_id: uuid.UUID, turns: int = 3) -> List[Tuple[str, str]]:
+    """
+    Tanya-jawab terakhir (maks `turns` pasang) di sesi ini sebagai konteks pertanyaan lanjutan.
+    Hanya pasangan yang dijawab SUCCESS: pertanyaan yang diblokir (injection), ditolak RBAC, atau error
+    tidak ikut, agar tidak mencemari prompt.
+    """
+    rows = (
+        await session.execute(
+            select(ChatMessage)
+            .where(ChatMessage.session_id == session_id)
+            .order_by(ChatMessage.created_at.desc(), ChatMessage.sender.asc())  # seri waktu: 'user' lebih dulu setelah dibalik
+            .limit(turns * 4)
+        )
+    ).scalars().all()[::-1]
+    pairs: List[Tuple[str, str]] = []
+    for prev, cur in zip(rows, rows[1:]):
+        if prev.sender == "user" and cur.sender == "assistant" and cur.status == "SUCCESS":
+            pairs += [("user", prev.content), ("assistant", cur.content)]
+    return pairs[-turns * 2:]

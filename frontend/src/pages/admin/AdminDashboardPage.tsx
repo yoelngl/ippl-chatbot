@@ -18,7 +18,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { api, BASE_URL } from "../../api/client";
+import { api, downloadFile } from "../../api/client";
 
 interface DashboardData {
   queries_today: number;
@@ -108,15 +108,14 @@ export const AdminDashboardPage: React.FC = () => {
             <span>Semua layanan berjalan</span>
           </div>
 
-          <a
-            href={`${BASE_URL}/audit/export-csv`}
-            target="_blank"
-            rel="noreferrer"
+          <button
+ type="button"
+ onClick={() => downloadFile("/audit/export-csv", "audit_log.csv").catch((e) => alert(e.message))}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-xl shadow-sm transition"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Unduh laporan</span>
-          </a>
+          </button>
         </div>
       </div>
 
@@ -289,9 +288,9 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-gray-400" />
                 <div>
-                  <span className="text-xs font-bold text-gray-800 block">Ollama · Llama 3 8B</span>
+                  <span className="text-xs font-bold text-gray-800 block">{data.services_status.ollama.name}</span>
                   <span className="text-[11px] text-gray-400">
-                    GPU 88% · 31 token/dtk
+                    {data.services_status.ollama.model}
                   </span>
                 </div>
               </div>

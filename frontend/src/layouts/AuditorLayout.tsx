@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { LogoutModal } from "../components/LogoutModal";
 import { useAuth } from "../context/AuthContext";
-import { BASE_URL } from "../api/client";
+import { downloadFile } from "../api/client";
 
 export const AuditorLayout: React.FC = () => {
   const { user } = useAuth();
@@ -59,15 +59,14 @@ export const AuditorLayout: React.FC = () => {
               <span>Log Audit</span>
             </NavLink>
 
-            <a
-              href={`${BASE_URL}/audit/export-csv`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-[#1E1E1C] transition"
+            <button
+ type="button"
+ onClick={() => downloadFile("/audit/export-csv", "audit_log.csv").catch((e) => alert(e.message))}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white hover:bg-[#1E1E1C] transition"
             >
               <Download className="w-4 h-4 shrink-0" />
               <span>Laporan Ekspor</span>
-            </a>
+            </button>
 
             <div className="pt-2 border-t border-[#262624] my-2">
               <Link

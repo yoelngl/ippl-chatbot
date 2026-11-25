@@ -8,12 +8,23 @@ class Settings(BaseSettings):
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.2:3b"
     ollama_embed_model: str = "nomic-embed-text"
+
+    # Penyedia LLM/embedding: "ollama" (lokal) atau "custom" (endpoint kompatibel OpenAI: 9router, OpenRouter, vLLM, LM Studio, dll.)
+    llm_provider: str = "ollama"
+    embedding_provider: str = "ollama"
+    custom_base_url: str = "http://localhost:20128/v1"
+    custom_api_key: str = ""
+    custom_model: str = "gpt-4o-mini"
+    custom_embed_model: str = "text-embedding-3-small"  # diminta 768 dimensi via parameter `dimensions`
     allow_mock_embedding: bool = False
 
     # RAG retrieval — kalibrasi dengan: docker compose exec backend python -m app.calibrate_rag
-    rag_top_k: int = 4
-    rag_similarity_threshold: float = 0.55   # skor kosinus minimum agar chunk dianggap relevan
-    rag_relative_margin: float = 0.08        # buang chunk yang jauh di bawah skor terbaik
+    rag_top_k: int = 6
+    rag_similarity_threshold: float = 0.55   # skor kosinus minimum untuk mendeteksi dokumen terlarang (QUERY_DENIED)
+    rag_context_floor: float = 0.55          # skor minimum chunk yang diberikan ke LLM; LLM yang menilai relevansinya
+    rag_relative_margin: float = 0.15        # buang chunk yang jauh di bawah skor terbaik
+    rag_denial_margin: float = 0.08          # dokumen terlarang yang unggul sejauh ini atas dokumen yang boleh -> QUERY_DENIED
+    rag_query_rewrite: bool = True           # tulis ulang kueri jadi kueri pencarian sebelum embedding
     ollama_chat_timeout: float = 90.0
 
     keycloak_internal_url: str = "http://keycloak:8080"  # untuk ambil JWKS (antar-container)

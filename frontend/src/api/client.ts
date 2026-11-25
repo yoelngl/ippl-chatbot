@@ -179,6 +179,17 @@ export async function apiFetchBlob(endpoint: string): Promise<Blob> {
   return response.blob();
 }
 
+/** Unduh file lewat fetch ber-token (link <a href> biasa tidak mengirim header Authorization). */
+export async function downloadFile(endpoint: string, filename: string): Promise<void> {
+  const blob = await apiFetchBlob(endpoint);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   get: <T = any>(endpoint: string, headers?: HeadersInit) =>
     apiFetch<T>(endpoint, { method: "GET", headers }),

@@ -71,15 +71,19 @@ def deterministic_mock_embedding(text: str, dim: int = 768) -> List[float]:
     return [round(x / norm, 6) for x in vec]
 
 
+def _embed_model() -> str:
+    return settings.custom_embed_model if settings.embedding_provider == "custom" else settings.ollama_embed_model
+
+
 def _uses_task_prefix() -> bool:
     """nomic-embed-text dilatih dengan prefiks tugas; tanpa prefiks skor kemiripan menumpuk."""
-    return "nomic" in settings.ollama_embed_model.lower()
+    return "nomic" in _embed_model().lower()
 
 
 def embedding_version() -> str:
     """Label versi embedding. Mengubahnya memicu embed ulang otomatis saat startup."""
     suffix = ":prefixed" if _uses_task_prefix() else ""
-    return f"ollama:{settings.ollama_embed_model}{suffix}:titled"
+    return f"{settings.embedding_provider}:{_embed_model()}{suffix}:titled"
 
 
 def document_embedding_text(filename: Optional[str], section_title: Optional[str], content: str) -> str:
@@ -96,31 +100,35 @@ def document_embedding_text(filename: Optional[str], section_title: Optional[str
 
 async def ollama_embedding(text: str, timeout: float = 10.0, kind: str = "document") -> List[float]:
     """
-    Membuat embedding 768-dimensi via Ollama TANPA fallback.
+    Membuat embedding 768-dimensi via penyedia terkonfigurasi (Ollama / API kompatibel OpenAI) TANPA fallback.
     kind: 'document' untuk chunk yang disimpan, 'query' untuk pertanyaan pengguna.
-    Melempar RuntimeError bila Ollama/model embedding belum siap.
+    Melempar RuntimeError bila layanan/model embedding belum siap.
     """
     if _uses_task_prefix():
         text = ("search_query: " if kind == "query" else "search_document: ") + text
+    custom = settings.embedding_provider == "custom"
+    if custom:
+        url = f"{settings.custom_base_url.rstrip('/')}/embeddings"
+        payload = {"model": settings.custom_embed_model, "input": text, "dimensions": 768}
+        headers = {"Authorization": f"Bearer {settings.custom_api_key}"}
+    else:
+        url = f"{settings.ollama_url}/api/embeddings"
+        payload = {"model": settings.ollama_embed_model, "prompt": text}
+        headers = {}
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            res = await client.post(
-                f"{settings.ollama_url}/api/embeddings",
-                json={
-                    "model": settings.ollama_embed_model,
-                    "prompt": text,
-                },
-            )
+            res = await client.post(url, json=payload, headers=headers)
     except Exception as e:
-        raise RuntimeError(f"Gagal menghubungi Ollama untuk embedding: {e}") from e
+        raise RuntimeError(f"Gagal menghubungi layanan embedding ({settings.embedding_provider}): {e}") from e
 
     if res.status_code != 200:
         raise RuntimeError(
-            f"Ollama embedding gagal (HTTP {res.status_code}): {res.text[:200]}"
+            f"Embedding gagal (HTTP {res.status_code}): {res.text[:200]}"
         )
-    emb = res.json().get("embedding")
+    body = res.json()
+    emb = body["data"][0].get("embedding") if custom and body.get("data") else body.get("embedding")
     if not emb or len(emb) != 768:
-        raise RuntimeError("Ollama tidak mengembalikan vektor embedding 768 dimensi.")
+        raise RuntimeError("Layanan embedding tidak mengembalikan vektor 768 dimensi.")
     return emb
 
 

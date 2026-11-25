@@ -144,11 +144,17 @@ async def get_dashboard_health(session: AsyncSession = Depends(get_session)):
     stmt_chunk_cnt = select(func.count(DocumentChunk.id))
     total_chunks = (await session.execute(stmt_chunk_cnt)).scalar_one() or 0
 
-    # Status Ollama
+    # Status LLM (Ollama atau API kompatibel OpenAI)
     ollama_status = "Sehat"
     try:
         async with httpx.AsyncClient(timeout=1.5) as client:
-            r = await client.get(f"{settings.ollama_url}/api/tags")
+            if settings.llm_provider == "custom":
+                r = await client.get(
+                    f"{settings.custom_base_url.rstrip('/')}/models",
+                    headers={"Authorization": f"Bearer {settings.custom_api_key}"},
+                )
+            else:
+                r = await client.get(f"{settings.ollama_url}/api/tags")
             if r.status_code != 200:
                 ollama_status = "Tersedia"
     except Exception:
@@ -173,9 +179,9 @@ async def get_dashboard_health(session: AsyncSession = Depends(get_session)):
             "vectors_count": total_chunks,
         },
         "ollama": {
-            "name": "Ollama · Llama 3 8B",
+            "name": "LLM · Custom (OpenAI-compatible)" if settings.llm_provider == "custom" else "Ollama · Llama 3 8B",
             "status": ollama_status,
-            "model": settings.ollama_model,
+            "model": settings.custom_model if settings.llm_provider == "custom" else settings.ollama_model,
         },
         "keycloak": {
             "name": "Keycloak (IdP)",
@@ -669,6 +675,9 @@ async def create_role(
     """
     user_id = uuid.UUID(user.db_id) if user.db_id else None
     client_ip = request.client.host if request.client else None
+
+    if (await session.execute(select(Role.id).where(Role.name == body.name))).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Nama peran sudah dipakai.")
 
     new_role = Role(
         name=body.name,

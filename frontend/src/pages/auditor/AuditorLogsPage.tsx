@@ -5,7 +5,7 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
-import { api, BASE_URL } from "../../api/client";
+import { api, downloadFile } from "../../api/client";
 
 interface AuditLogItem {
   id: number;
@@ -160,15 +160,14 @@ export const AuditorLogsPage: React.FC = () => {
           </p>
         </div>
 
-        <a
-          href={`${BASE_URL}/audit/export-csv`}
-          target="_blank"
-          rel="noreferrer"
+        <button
+ type="button"
+ onClick={() => downloadFile("/audit/export-csv", "audit_log.csv").catch((e) => alert(e.message))}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 text-xs font-semibold rounded-xl shadow-sm transition"
         >
           <Download className="w-4 h-4 text-gray-600" />
           <span>Ekspor CSV</span>
-        </a>
+        </button>
       </div>
 
       {/* Banner Hijau: Integritas Log Terverifikasi */}

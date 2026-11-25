@@ -19,6 +19,8 @@ import {
 import { api } from "../api/client";
 import { DocumentViewerModal } from "../components/DocumentViewerModal";
 import { LogoutModal } from "../components/LogoutModal";
+import { ThinkingBubble, TypedText } from "../components/ChatProgress";
+import { CitedText } from "../components/CitedText";
 import { useAuth } from "../context/AuthContext";
 
 interface Citation {
@@ -63,6 +65,7 @@ export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [typingId, setTypingId] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   // Dokumen sumber sitasi yang sedang dibuka (FR-RESP-004 / NFR-USA-002)
   const [viewerDoc, setViewerDoc] = useState<{
@@ -160,7 +163,7 @@ export const ChatPage: React.FC = () => {
       const newSession = await api.post<ChatSession>("/chat/sessions", {
         title: "Percakapan baru",
       });
-      setSessions((prev) => [newSession, ...prev]);
+      setSessions((prev) => [newSession, ...prev.filter((s) => s.id !== newSession.id)]);
       setActiveSessionId(newSession.id);
       setMessages([]);
     } catch (err) {
@@ -181,7 +184,7 @@ export const ChatPage: React.FC = () => {
         const newSession = await api.post<ChatSession>("/chat/sessions", {
           title: query.slice(0, 40),
         });
-        setSessions((prev) => [newSession, ...prev]);
+        setSessions((prev) => [newSession, ...prev.filter((s) => s.id !== newSession.id)]);
         setActiveSessionId(newSession.id);
         targetSessionId = newSession.id;
       } catch (err) {
@@ -211,6 +214,7 @@ export const ChatPage: React.FC = () => {
         { content: query }
       );
       setMessages((prev) => [...prev, assistantMsg]);
+      if (assistantMsg.status === "SUCCESS") setTypingId(assistantMsg.id);
       loadSessions(); // Perbarui judul sesi jika berubah
     } catch (err: any) {
       const errorMsg: Message = {
@@ -295,7 +299,9 @@ export const ChatPage: React.FC = () => {
           <div className="p-3">
             <button
               onClick={handleCreateNewSession}
-              className="w-full py-2.5 px-4 bg-[#C92A2A] hover:bg-[#A61E1E] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-sm transition"
+              disabled={messages.length === 0}
+              title={messages.length === 0 ? "Percakapan ini masih kosong" : undefined}
+              className="w-full py-2.5 px-4 bg-[#C92A2A] hover:bg-[#A61E1E] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
               <span>Percakapan baru</span>
@@ -436,12 +442,6 @@ export const ChatPage: React.FC = () => {
                 </strong>
               </span>
             </div>
-
-            {/* Badge Model LLM */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C1C1A] border border-[#2E2E2B] text-[11px] text-gray-300">
-              <Bot className="w-3 h-3 text-red-400" />
-              <span>Llama 3 · Ollama</span>
-            </div>
           </div>
         </header>
 
@@ -515,9 +515,25 @@ export const ChatPage: React.FC = () => {
                   <div className="max-w-3xl w-full space-y-3">
                     {/* Bubble Teks Jawaban */}
                     <div className="bg-[#1C1C1A] border border-[#2E2E2B] text-gray-200 px-5 py-4 rounded-2xl rounded-tl-sm shadow-sm text-sm leading-relaxed">
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      {typingId === msg.id ? (
+                        <TypedText
+                          text={msg.content}
+                          onTick={() => messagesEndRef.current?.scrollIntoView({ block: "end" })}
+                          onDone={() => setTypingId(null)}
+                        />
+                      ) : (
+                        <CitedText
+                          text={msg.content}
+                          citations={msg.citations_json ?? []}
+                          onOpen={(c) =>
+                            setViewerDoc({ id: c.document_id, filename: c.filename, classification: c.classification })
+                          }
+                        />
+                      )}
                     </div>
 
+                    {typingId !== msg.id && (
+                    <>
                     {/* Kartu Sumber Dokumen (Jika ada sitasi) */}
                     {msg.citations_json && msg.citations_json.length > 0 && (
                       <div className="p-3 bg-[#161614] border border-[#242422] rounded-xl space-y-2">
@@ -611,11 +627,14 @@ export const ChatPage: React.FC = () => {
                         <span>RBAC Filtered</span>
                       </div>
                     </div>
+                    </>
+                    )}
                   </div>
                 </div>
               );
             })
           )}
+          {isSending && <ThinkingBubble />}
           <div ref={messagesEndRef} />
         </div>
 

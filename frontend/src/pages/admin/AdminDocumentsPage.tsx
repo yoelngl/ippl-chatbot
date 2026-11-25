@@ -65,6 +65,7 @@ export const AdminDocumentsPage: React.FC = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Reindex state
   const [isReindexing, setIsReindexing] = useState(false);
@@ -98,28 +99,36 @@ export const AdminDocumentsPage: React.FC = () => {
     loadDocuments();
   }, [search, selectedClass, statusFilter, page]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFiles = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadError(null);
     setUploadSuccess(null);
     setIsUploading(true);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("classification", uploadClass);
-
-    try {
-      await api.post("/admin/documents/upload", formData);
-      setUploadSuccess(`Dokumen "${file.name}" berhasil diunggah dan diindeks.`);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      loadDocuments();
-    } catch (err: any) {
-      setUploadError(err.message || "Gagal mengunggah dokumen.");
-    } finally {
-      setIsUploading(false);
+    let okCount = 0;
+    const failed: string[] = [];
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("classification", uploadClass);
+      try {
+        await api.post("/admin/documents/upload", formData);
+        okCount++;
+      } catch (err) {
+        failed.push(`${file.name}: ${err instanceof Error ? err.message : "gagal"}`);
+      }
     }
+    if (okCount) setUploadSuccess(`${okCount} dokumen berhasil diunggah dan diindeks.`);
+    if (failed.length) setUploadError(failed.join(" | "));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setIsUploading(false);
+    loadDocuments();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (!isUploading) uploadFiles(Array.from(e.dataTransfer.files));
   };
 
   const handleReindexAll = async () => {
@@ -243,12 +252,23 @@ export const AdminDocumentsPage: React.FC = () => {
       </div>
 
       {/* Area Dropzone Unggah File */}
-      <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-gray-200 text-center relative hover:border-red-300 transition">
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        className={`bg-white p-6 rounded-2xl border-2 border-dashed text-center relative transition ${
+          isDragging ? "border-red-500 bg-red-50/40" : "border-gray-200 hover:border-red-300"
+        }`}
+      >
         <input
           ref={fileInputRef}
           type="file"
           accept=".pdf,.docx"
-          onChange={handleFileUpload}
+          onChange={(e) => uploadFiles(Array.from(e.target.files ?? []))}
+          multiple
           disabled={isUploading}
           className="hidden"
         />
